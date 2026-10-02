@@ -22,9 +22,8 @@ from .storage import (  # noqa: F401
 
 type CartLine = tuple[int, int]
 
-# TODO: задайте позиции полей внутри кортежа CartLine
 LINE_PRODUCT_ID_INDEX: Final = 0
-LINE_QUANTITY_INDEX: Final = 0
+LINE_QUANTITY_INDEX: Final = 1
 
 
 def add_to_cart(
@@ -53,8 +52,24 @@ def add_to_cart(
         The cart line for ``product_id`` after the addition, or ``None``
         when the product is unknown or the store cannot cover the request.
     """
-    # TODO: реализуйте функцию
-    return (0, 0)
+    storage_product = read_product(storage, product_id)
+
+    if storage_product == None:
+        return None
+
+    if storage_product[QUANTITY_INDEX] < quantity:
+        print(f"not enough stock: {storage_product[NAME_INDEX]} has {storage_product[QUANTITY_INDEX]}, requested {quantity}")
+        return None
+
+    product_fields = (storage_product[NAME_INDEX], storage_product[PRICE_INDEX], storage_product[QUANTITY_INDEX] - quantity)
+    update_product(storage, product_id, product_fields)
+
+    cart_product = update_cart(cart, product_id, quantity) #!!!
+    if cart_product != None:
+        return cart_product
+
+    return add_to_cart(storage, cart, product_id, quantity)
+
 
 
 def remove_from_cart(
@@ -86,4 +101,55 @@ def remove_from_cart(
         line for the product or holds too few units.
     """
     # TODO: реализуйте функцию
-    return (0, 0)
+    if not find_cart_line(cart, product_id):
+        print(f"product {product_id} is not in the cart")
+        return None
+
+    cart_product = read_cart_line(cart, product_id)
+    if cart_product != None and cart_product[LINE_QUANTITY_INDEX] < quantity:
+        print(f"cart holds only {cart_product[LINE_QUANTITY_INDEX]} unit(s) of product {product_id}, cannot remove {quantity}")
+        return None
+
+    storage_product = read_product(storage, product_id)
+    if storage_product == None:
+        return None
+
+    storage_fields = (storage_product[NAME_INDEX], storage_product[PRICE_INDEX], storage_product[QUANTITY_INDEX] + quantity)
+    update_product(storage, product_id, storage_fields)
+
+    
+    if cart_product != None:
+        if cart_product[LINE_QUANTITY_INDEX] - quantity == 0:
+            cart.remove((product_id, cart_product[LINE_QUANTITY_INDEX]))
+
+    return update_cart(cart, product_id, -quantity)
+
+def find_cart_line(
+    cart: list[CartLine],
+    product_id: int
+) -> bool:
+    for i in cart:
+        if i[LINE_PRODUCT_ID_INDEX] == product_id:
+            return True
+    return False
+
+def read_cart_line(
+    cart: list[CartLine],
+    product_id: int
+) -> CartLine | None:
+    for i in cart:
+        if i[LINE_PRODUCT_ID_INDEX] == product_id:
+            return i
+    return None
+
+def update_cart(
+    cart: list[CartLine],
+    product_id: int,
+    quantity: int,
+) -> CartLine | None:
+    cart_product = read_cart_line(cart, product_id)
+    if cart_product != None:
+        product = (product_id, cart_product[LINE_QUANTITY_INDEX] + quantity)
+        cart.insert(cart.index(cart_product), product)
+        return product
+    return None
