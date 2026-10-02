@@ -59,18 +59,18 @@ def create_product(
         ``storage`` is left unchanged and a message naming the clashing
         name is printed.
     """
+    name, price, quantity = fields
+
     for product in storage:
-        if product[NAME_INDEX] == fields[NAME_INDEX]:
-            print(f"product name '{fields[NAME_INDEX]}' is already taken")
+        if product[NAME_INDEX] == name:
+            print(f"product name '{name}' is already taken")
             return None
 
-    id = generate_product_id(storage)
-    price = normalize_price(fields[1])
-
-    product = (id, fields[0], price, fields[2])
+    product_id = generate_product_id(storage)
+    product = (product_id, name, normalize_price(price), quantity)
     storage.append(product)
 
-    return id
+    return product_id
 
 
 def read_product(storage: list[Product], product_id: int) -> Product | None:
@@ -116,12 +116,15 @@ def update_product(
         ``None`` when no product carries that identifier (``storage`` is
         left unchanged and a message is printed).
     """
+    name, price, quantity = fields
+
     storage_product = read_product(storage, product_id)
-    if storage_product != None:
-        product = (product_id, fields[0], normalize_price(fields[1]), fields[2])
-        storage.insert(storage.index(storage_product), product)
-        return product
-    return None
+    if storage_product is None:
+        return None
+
+    product = (product_id, name, normalize_price(price), quantity)
+    storage[storage.index(storage_product)] = product
+    return product
 
 
 def delete_product(storage: list[Product], product_id: int) -> int | None:
@@ -138,8 +141,8 @@ def delete_product(storage: list[Product], product_id: int) -> int | None:
         a message is printed).
     """
     storage_product = read_product(storage, product_id)
-    if storage_product != None:
-        storage.remove(storage_product)
-        return product_id
+    if storage_product is None:
+        return None
 
-    return None
+    storage.remove(storage_product)
+    return product_id

@@ -71,7 +71,7 @@ def add_to_cart(
     )
     update_product(storage, product_id, product_fields)
 
-    return update_cart(cart, product_id, quantity)
+    return change_cart_quantity(cart, product_id, quantity)
 
 
 def remove_from_cart(
@@ -106,10 +106,11 @@ def remove_from_cart(
         print(f"product {product_id} is not in the cart")
         return None
 
-    cart_product = read_cart_line(cart, product_id)
-    if cart_product is not None and cart_product[LINE_QUANTITY_INDEX] < quantity:
+    cart_line = read_cart_line(cart, product_id)
+    if cart_line is not None and cart_line[LINE_QUANTITY_INDEX] < quantity:
         print(
-            f"cart holds only {cart_product[LINE_QUANTITY_INDEX]} unit(s) of product {product_id}, cannot remove {quantity}"
+            f"cart holds only {cart_line[LINE_QUANTITY_INDEX]} unit(s) "
+            f"of product {product_id}, cannot remove {quantity}"
         )
         return None
 
@@ -124,38 +125,51 @@ def remove_from_cart(
     )
     update_product(storage, product_id, storage_fields)
 
-    if cart_product != None and cart_product[LINE_QUANTITY_INDEX] - quantity == 0:
-        cart.remove((product_id, cart_product[LINE_QUANTITY_INDEX]))
-        return None
+    new_line = change_cart_quantity(cart, product_id, -quantity)
+    if new_line[LINE_QUANTITY_INDEX] != 0:
+        return new_line
 
-    return update_cart(cart, product_id, -quantity)
+    cart.remove(new_line)
+    return (product_id, 0)
 
 
 def find_cart_line(cart: list[CartLine], product_id: int) -> bool:
-    for i in cart:
-        if i[LINE_PRODUCT_ID_INDEX] == product_id:
+    for line in cart:
+        if line[LINE_PRODUCT_ID_INDEX] == product_id:
             return True
     return False
 
 
 def read_cart_line(cart: list[CartLine], product_id: int) -> CartLine | None:
-    for i in cart:
-        if i[LINE_PRODUCT_ID_INDEX] == product_id:
-            return i
+    for line in cart:
+        if line[LINE_PRODUCT_ID_INDEX] == product_id:
+            return line
     return None
 
 
-def update_cart(
+def change_cart_quantity(
     cart: list[CartLine],
     product_id: int,
     quantity: int,
-) -> CartLine | None:
+) -> CartLine:
+    """Change the quantity of the cart line for ``product_id`` by ``quantity``.
+
+    Creates the line when the cart has none for the product.
+
+    Args:
+        cart: The cart to modify; modified in place.
+        product_id: The identifier of the product whose line changes.
+        quantity: The delta applied to the line quantity.
+
+    Returns:
+        The cart line for ``product_id`` after the change.
+    """
     cart_line = read_cart_line(cart, product_id)
     if cart_line is not None:
-        product = (product_id, cart_line[LINE_QUANTITY_INDEX] + quantity)
-        cart.insert(cart.index(cart_line), product)
-        return product
+        new_line = (product_id, cart_line[LINE_QUANTITY_INDEX] + quantity)
+        cart[cart.index(cart_line)] = new_line
+        return new_line
 
-    product = (product_id, quantity)
-    cart.append(product)
-    return product
+    new_line = (product_id, quantity)
+    cart.append(new_line)
+    return new_line
