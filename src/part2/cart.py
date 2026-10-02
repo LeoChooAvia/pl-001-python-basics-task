@@ -11,8 +11,8 @@ an explanatory message to stdout and returns ``None``.
 
 from typing import Final
 
-from .crud import read_product, update_product  # noqa: F401
-from .storage import (  # noqa: F401
+from .crud import read_product, update_product
+from .storage import (
     NAME_INDEX,
     PRICE_INDEX,
     QUANTITY_INDEX,
@@ -58,18 +58,23 @@ def add_to_cart(
         return None
 
     if storage_product[QUANTITY_INDEX] < quantity:
-        print(f"not enough stock: {storage_product[NAME_INDEX]} has {storage_product[QUANTITY_INDEX]}, requested {quantity}")
+        print(
+            f"not enough stock: {storage_product[NAME_INDEX]} has {storage_product[QUANTITY_INDEX]}, requested {quantity}"
+        )
         return None
 
-    product_fields = (storage_product[NAME_INDEX], storage_product[PRICE_INDEX], storage_product[QUANTITY_INDEX] - quantity)
+    product_fields = (
+        storage_product[NAME_INDEX],
+        storage_product[PRICE_INDEX],
+        storage_product[QUANTITY_INDEX] - quantity,
+    )
     update_product(storage, product_id, product_fields)
 
-    cart_product = update_cart(cart, product_id, quantity) #!!!
+    cart_product = update_cart(cart, product_id, quantity)
     if cart_product != None:
         return cart_product
 
     return add_to_cart(storage, cart, product_id, quantity)
-
 
 
 def remove_from_cart(
@@ -107,40 +112,41 @@ def remove_from_cart(
 
     cart_product = read_cart_line(cart, product_id)
     if cart_product != None and cart_product[LINE_QUANTITY_INDEX] < quantity:
-        print(f"cart holds only {cart_product[LINE_QUANTITY_INDEX]} unit(s) of product {product_id}, cannot remove {quantity}")
+        print(
+            f"cart holds only {cart_product[LINE_QUANTITY_INDEX]} unit(s) of product {product_id}, cannot remove {quantity}"
+        )
         return None
 
     storage_product = read_product(storage, product_id)
     if storage_product == None:
         return None
 
-    storage_fields = (storage_product[NAME_INDEX], storage_product[PRICE_INDEX], storage_product[QUANTITY_INDEX] + quantity)
+    storage_fields = (
+        storage_product[NAME_INDEX],
+        storage_product[PRICE_INDEX],
+        storage_product[QUANTITY_INDEX] + quantity,
+    )
     update_product(storage, product_id, storage_fields)
 
-    
-    if cart_product != None:
-        if cart_product[LINE_QUANTITY_INDEX] - quantity == 0:
-            cart.remove((product_id, cart_product[LINE_QUANTITY_INDEX]))
+    if cart_product != None and cart_product[LINE_QUANTITY_INDEX] - quantity == 0:
+        cart.remove((product_id, cart_product[LINE_QUANTITY_INDEX]))
 
     return update_cart(cart, product_id, -quantity)
 
-def find_cart_line(
-    cart: list[CartLine],
-    product_id: int
-) -> bool:
+
+def find_cart_line(cart: list[CartLine], product_id: int) -> bool:
     for i in cart:
         if i[LINE_PRODUCT_ID_INDEX] == product_id:
             return True
     return False
 
-def read_cart_line(
-    cart: list[CartLine],
-    product_id: int
-) -> CartLine | None:
+
+def read_cart_line(cart: list[CartLine], product_id: int) -> CartLine | None:
     for i in cart:
         if i[LINE_PRODUCT_ID_INDEX] == product_id:
             return i
     return None
+
 
 def update_cart(
     cart: list[CartLine],
