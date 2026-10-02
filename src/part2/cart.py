@@ -54,12 +54,13 @@ def add_to_cart(
     """
     storage_product = read_product(storage, product_id)
 
-    if storage_product == None:
+    if storage_product is None:
         return None
 
     if storage_product[QUANTITY_INDEX] < quantity:
         print(
-            f"not enough stock: {storage_product[NAME_INDEX]} has {storage_product[QUANTITY_INDEX]}, requested {quantity}"
+            f"not enough stock for product {product_id}: "
+            f"{storage_product[QUANTITY_INDEX]} available, {quantity} requested"
         )
         return None
 
@@ -70,11 +71,7 @@ def add_to_cart(
     )
     update_product(storage, product_id, product_fields)
 
-    cart_product = update_cart(cart, product_id, quantity)
-    if cart_product != None:
-        return cart_product
-
-    return add_to_cart(storage, cart, product_id, quantity)
+    return update_cart(cart, product_id, quantity)
 
 
 def remove_from_cart(
@@ -105,20 +102,19 @@ def remove_from_cart(
         zero means the line was dropped), or ``None`` when the cart has no
         line for the product or holds too few units.
     """
-    # TODO: реализуйте функцию
     if not find_cart_line(cart, product_id):
         print(f"product {product_id} is not in the cart")
         return None
 
     cart_product = read_cart_line(cart, product_id)
-    if cart_product != None and cart_product[LINE_QUANTITY_INDEX] < quantity:
+    if cart_product is not None and cart_product[LINE_QUANTITY_INDEX] < quantity:
         print(
             f"cart holds only {cart_product[LINE_QUANTITY_INDEX]} unit(s) of product {product_id}, cannot remove {quantity}"
         )
         return None
 
     storage_product = read_product(storage, product_id)
-    if storage_product == None:
+    if storage_product is None:
         return None
 
     storage_fields = (
@@ -130,6 +126,7 @@ def remove_from_cart(
 
     if cart_product != None and cart_product[LINE_QUANTITY_INDEX] - quantity == 0:
         cart.remove((product_id, cart_product[LINE_QUANTITY_INDEX]))
+        return None
 
     return update_cart(cart, product_id, -quantity)
 
@@ -153,9 +150,12 @@ def update_cart(
     product_id: int,
     quantity: int,
 ) -> CartLine | None:
-    cart_product = read_cart_line(cart, product_id)
-    if cart_product != None:
-        product = (product_id, cart_product[LINE_QUANTITY_INDEX] + quantity)
-        cart.insert(cart.index(cart_product), product)
+    cart_line = read_cart_line(cart, product_id)
+    if cart_line is not None:
+        product = (product_id, cart_line[LINE_QUANTITY_INDEX] + quantity)
+        cart.insert(cart.index(cart_line), product)
         return product
-    return None
+
+    product = (product_id, quantity)
+    cart.append(product)
+    return product
