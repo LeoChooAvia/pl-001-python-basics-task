@@ -18,7 +18,7 @@ Presentation:
   the longest value it holds in that particular call.
 """
 
-from decimal import ROUND_HALF_UP, Decimal  # noqa: F401
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Final
 
 from .storage import Product
@@ -64,18 +64,16 @@ def normalize_product_name(name: str) -> str:
     """
     name_list = name.split()
     normalize_name = " ".join(name_list).lower()
-    
+
     return normalize_name
 
 
-# TODO: при необходимости добавьте свои вспомогательные функции
-def get_separator_str(storage_lengths: list) -> str:
+def get_separator_str(storage_lengths: tuple[int, ...]) -> str:
     separator = "|"
     for length in storage_lengths:
         separator += "-" + "-" * length + "-|"
     separator += "\n"
     return separator
-
 
 
 def get_storage_str_representation(storage: list[Product]) -> str:
@@ -108,16 +106,23 @@ def get_storage_str_representation(storage: list[Product]) -> str:
     str_storage += "|"
     for i in range(len(TABLE_HEADERS)):
         str_storage += " "
-        str_storage += str(TABLE_HEADERS[i]) + " " * (storage_lengths[i] - len(str(TABLE_HEADERS[i])))
+        str_storage += str(TABLE_HEADERS[i]) + " " * (
+            storage_lengths[i] - len(str(TABLE_HEADERS[i]))
+        )
         str_storage += " |"
     str_storage += "\n"
 
-    str_storage += get_separator_str(storage_lengths)
+    str_storage += get_separator_str(tuple(storage_lengths))
 
     for product in storage:
         stroke = "|"
         for i in range(len(TABLE_HEADERS)):
-            stroke += " " + str(product[i]) + " " * (storage_lengths[i] - len(str(product[i]))) + " |"
+            stroke += (
+                " "
+                + str(product[i])
+                + " " * (storage_lengths[i] - len(str(product[i])))
+                + " |"
+            )
         str_storage += stroke + "\n"
 
     str_storage = str_storage[:-1]

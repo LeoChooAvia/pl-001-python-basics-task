@@ -20,15 +20,13 @@ product.
 
 from decimal import Decimal
 
-from .storage import (  # noqa: F401
+from .storage import (
     NAME_INDEX,
-    PRICE_INDEX,
-    QUANTITY_INDEX,
     PRODUCT_ID_INDEX,
     PRODUCT_ID_MIN,
     Product,
 )
-from .utils import normalize_price, normalize_product_name  # noqa: F401
+from .utils import normalize_price, normalize_product_name
 
 
 def generate_product_id(storage: list[Product]) -> int:
@@ -173,4 +171,3 @@ def delete_product(storage: list[Product], product_id: int) -> int | None:
 
     storage.remove(storage_product)
     return product_id
-

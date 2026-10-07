@@ -29,24 +29,21 @@ store is left untouched and the loop keeps running; only ``exit`` stops
 it.
 """
 
-from decimal import Decimal, InvalidOperation  # noqa: F401
+from decimal import Decimal, InvalidOperation
 from typing import Final
 
-from .crud import (  # noqa: F401
+from .crud import (
     create_product,
     delete_product,
     read_product,
     update_product,
 )
 from .storage import Product
-from .utils import get_storage_str_representation  # noqa: F401
-from .crud import read_product, delete_product, create_product, update_product
+from .utils import get_storage_str_representation
 
 
-# TODO: задайте приглашение и текст справки
-PROMPT: Final[str] = "admin> " 
-HELP_TEXT: Final[str] = \
-"""Available commands:
+PROMPT: Final[str] = "admin> "
+HELP_TEXT: Final[str] = """Available commands:
   help                                       show this message
   exit                                       leave the console
   show                                       print the whole store as a table
@@ -119,7 +116,7 @@ def run_command(storage: list[Product], line: str) -> bool:
         case ["read", id]:
             print_result(read_product(storage, int(id)))
             return True
-         
+
         case ["delete", id]:
             print_result(delete_product(storage, int(id)))
             return True
@@ -127,7 +124,7 @@ def run_command(storage: list[Product], line: str) -> bool:
         case ["create", *name, price, quantity]:
             if not name:
                 print(f"'{line}' is not a command")
-            
+
             fields = (" ".join(name), Decimal(price), int(quantity))
             print_result(create_product(storage, fields))
             return True
