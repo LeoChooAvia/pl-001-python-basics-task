@@ -124,6 +124,7 @@ def run_command(storage: list[Product], line: str) -> bool:
         case ["create", *name, price, quantity]:
             if not name:
                 print(f"'{line}' is not a command")
+                return True
 
             fields = (" ".join(name), Decimal(price), int(quantity))
             print_result(create_product(storage, fields))
@@ -132,6 +133,7 @@ def run_command(storage: list[Product], line: str) -> bool:
         case ["update", id, *name, price, quantity]:
             if not name:
                 print(f"'{line}' is not a command")
+                return True
 
             fields = (" ".join(name), Decimal(price), int(quantity))
             print_result(update_product(storage, int(id), fields))
