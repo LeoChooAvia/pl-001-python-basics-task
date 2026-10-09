@@ -43,8 +43,7 @@ def generate_product_id(storage: list[Product]) -> int:
     if not storage:
         return PRODUCT_ID_MIN
 
-    indexes = [i[PRODUCT_ID_INDEX] for i in storage]
-    return max(indexes) + 1
+    return max(product[PRODUCT_ID_INDEX] for product in storage) + 1
 
 
 def create_product(
@@ -67,7 +66,8 @@ def create_product(
         normalised name already exists. In the ``None`` case ``storage``
         is left unchanged and an explanatory message is printed.
     """
-    name = normalize_product_name(fields[0])
+    name, price, quantity = fields
+    name = normalize_product_name(name)
 
     if not name:
         print("product name must not be blank")
@@ -79,9 +79,7 @@ def create_product(
             return None
 
     product_id = generate_product_id(storage)
-    product = (product_id, name, normalize_price(fields[1]), fields[2])
-    storage.append(product)
-
+    storage.append((product_id, name, normalize_price(price), quantity))
     return product_id
 
 
@@ -138,17 +136,17 @@ def update_product(
         print("product name must not be blank")
         return None
 
-    storage_product = read_product(storage, product_id)
-    if storage_product is None:
+    existing_product = read_product(storage, product_id)
+    if existing_product is None:
         return None
 
     for product in storage:
-        if (product[NAME_INDEX] == name) and product[PRODUCT_ID_INDEX] != product_id:
+        if product[NAME_INDEX] == name and product[PRODUCT_ID_INDEX] != product_id:
             print(f"product name '{name}' is already taken")
             return None
 
     product = (product_id, name, normalize_price(price), quantity)
-    storage[storage.index(storage_product)] = product
+    storage[storage.index(existing_product)] = product
     return product
 
 
@@ -165,9 +163,9 @@ def delete_product(storage: list[Product], product_id: int) -> int | None:
         product carried that identifier (``storage`` is left unchanged and
         a message is printed).
     """
-    storage_product = read_product(storage, product_id)
-    if storage_product is None:
+    product = read_product(storage, product_id)
+    if product is None:
         return None
 
-    storage.remove(storage_product)
+    storage.remove(product)
     return product_id
