@@ -62,10 +62,10 @@ def normalize_product_name(name: str) -> str:
         The result is an empty string when ``name`` holds nothing but
         whitespace.
     """
-    name_list = name.split()
-    normalize_name = " ".join(name_list).lower()
+    name_words = name.split()
+    normalized_name = " ".join(name_words).lower()
 
-    return normalize_name
+    return normalized_name
 
 
 def get_separator_str(storage_lengths: tuple[int, ...]) -> str:
@@ -96,35 +96,35 @@ def get_storage_str_representation(storage: list[Product]) -> str:
     """
     storage_lengths = []
     for i in range(len(TABLE_HEADERS)):
-        max_stroke_length = 0
+        max_value_length = 0
         for elem in storage:
-            max_stroke_length = max(len(str(elem[i])), max_stroke_length)
-        storage_lengths.append(max(len(str(TABLE_HEADERS[i])), max_stroke_length))
+            max_value_length = max(len(str(elem[i])), max_value_length)
+        storage_lengths.append(max(len(str(TABLE_HEADERS[i])), max_value_length))
 
-    str_storage = ""
+    table = ""
 
-    str_storage += "|"
+    table += "|"
     for i in range(len(TABLE_HEADERS)):
-        str_storage += " "
-        str_storage += str(TABLE_HEADERS[i]) + " " * (
+        table += " "
+        table += str(TABLE_HEADERS[i]) + " " * (
             storage_lengths[i] - len(str(TABLE_HEADERS[i]))
         )
-        str_storage += " |"
-    str_storage += "\n"
+        table += " |"
+    table += "\n"
 
-    str_storage += get_separator_str(tuple(storage_lengths))
+    table += get_separator_str(tuple(storage_lengths))
 
     for product in storage:
-        stroke = "|"
+        row = "|"
         for i in range(len(TABLE_HEADERS)):
-            stroke += (
+            row += (
                 " "
                 + str(product[i])
                 + " " * (storage_lengths[i] - len(str(product[i])))
                 + " |"
             )
-        str_storage += stroke + "\n"
+        table += row + "\n"
 
-    str_storage = str_storage[:-1]
+    table = table[:-1]
 
-    return str_storage
+    return table
