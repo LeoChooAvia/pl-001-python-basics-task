@@ -200,25 +200,32 @@ def test_print_result(capsys: pytest.CaptureFixture[str]) -> None:
     assert capsys.readouterr().out == "(1, 'saw', Decimal('9.90'), 5)\n"
 
 
-def test_run_command(capsys: pytest.CaptureFixture[str]) -> None:
+def sample_storage() -> list[Product]:
+    """A fresh store with two products, for the run_command tests."""
+    return [
+        (1, "cordless drill", Decimal("89.99"), 12),
+        (2, "claw hammer", Decimal("9.90"), 40),
+    ]
+
+
+def test_run_command_help_exit(capsys: pytest.CaptureFixture[str]) -> None:
     storage: list[Product] = []
 
-    # help и exit
     assert run_command(storage, "help") is True
     assert capsys.readouterr().out == HELP_TEXT + "\n"
 
     assert run_command(storage, "exit") is False
     assert capsys.readouterr().out == ""
+    assert storage == []
 
-    # show на пустом хранилище
-    assert run_command(storage, "show") is True
-    assert capsys.readouterr().out == (
-        "| ID | name | price | quantity |\n|----|------|-------|----------|\n"
-    )
 
-    # create: имя нормализуется, цена округляется, печатается id
+def test_run_command_create(capsys: pytest.CaptureFixture[str]) -> None:
+    storage: list[Product] = []
+
+    # имя нормализуется, цена округляется, печатается новый id
     assert run_command(storage, "create Cordless Drill 89.99 12") is True
     assert capsys.readouterr().out == "1\n"
+
     assert run_command(storage, "create  claw   hammer 9.9 40") is True
     assert capsys.readouterr().out == "2\n"
     assert storage == [
@@ -226,7 +233,19 @@ def test_run_command(capsys: pytest.CaptureFixture[str]) -> None:
         (2, "claw hammer", Decimal("9.90"), 40),
     ]
 
-    # show: всё хранилище таблицей
+
+def test_run_command_show(capsys: pytest.CaptureFixture[str]) -> None:
+    storage: list[Product] = []
+
+    assert run_command(storage, "show") is True
+    assert capsys.readouterr().out == (
+        "| ID | name | price | quantity |\n|----|------|-------|----------|\n"
+    )
+
+    run_command(storage, "create Cordless Drill 89.99 12")
+    run_command(storage, "create  claw   hammer 9.9 40")
+    capsys.readouterr()
+
     assert run_command(storage, "show") is True
     assert capsys.readouterr().out == (
         "| ID | name           | price | quantity |\n"
@@ -235,13 +254,24 @@ def test_run_command(capsys: pytest.CaptureFixture[str]) -> None:
         "| 2  | claw hammer    | 9.90  | 40       |\n"
     )
 
-    # read: товар найден / не найден
+
+def test_run_command_read(capsys: pytest.CaptureFixture[str]) -> None:
+    storage = sample_storage()
+
     assert run_command(storage, "read 1") is True
     assert capsys.readouterr().out == "(1, 'cordless drill', Decimal('89.99'), 12)\n"
+
     assert run_command(storage, "read 5") is True
     assert capsys.readouterr().out == "no product with id 5\n"
+    assert storage == [
+        (1, "cordless drill", Decimal("89.99"), 12),
+        (2, "claw hammer", Decimal("9.90"), 40),
+    ]
 
-    # update: поля перезаписываются, id сохраняется
+
+def test_run_command_update(capsys: pytest.CaptureFixture[str]) -> None:
+    storage = sample_storage()
+
     assert run_command(storage, "update 2 mallet 7.50 30") is True
     assert capsys.readouterr().out == "(2, 'mallet', Decimal('7.50'), 30)\n"
     assert storage == [
@@ -249,14 +279,23 @@ def test_run_command(capsys: pytest.CaptureFixture[str]) -> None:
         (2, "mallet", Decimal("7.50"), 30),
     ]
 
-    # delete: товар удаляется, печатается id; повтор — товара нет
+
+def test_run_command_delete(capsys: pytest.CaptureFixture[str]) -> None:
+    storage = sample_storage()
+
     assert run_command(storage, "delete 2") is True
     assert capsys.readouterr().out == "2\n"
-    assert storage == [(1, "cordless drill", Decimal("89.99"), 12)]
+
     assert run_command(storage, "delete 2") is True
     assert capsys.readouterr().out == "no product with id 2\n"
+    assert storage == [(1, "cordless drill", Decimal("89.99"), 12)]
 
-    # неизвестная команда / неверное число аргументов: хранилище не меняется
+
+def test_run_command_not_a_command(capsys: pytest.CaptureFixture[str]) -> None:
+    storage = sample_storage()
+
+    # неизвестная команда, неверное число аргументов и create/update без
+    # слов имени: одно и то же сообщение, хранилище не меняется
     for line in (
         "frobnicate 1 2",
         "read 1 2 3",
@@ -265,23 +304,27 @@ def test_run_command(capsys: pytest.CaptureFixture[str]) -> None:
         "help me",
         "exit now",
         "show extra",
+        "create 89.90 12",
+        "update 1 89.90 12",
     ):
         assert run_command(storage, line) is True
         assert capsys.readouterr().out == f"'{line}' is not a command\n"
-    assert storage == [(1, "cordless drill", Decimal("89.99"), 12)]
+    assert storage == [
+        (1, "cordless drill", Decimal("89.99"), 12),
+        (2, "claw hammer", Decimal("9.90"), 40),
+    ]
 
-    # create/update без слов имени: только сообщение «not a command»
-    assert run_command(storage, "create 89.90 12") is True
-    assert capsys.readouterr().out == "'create 89.90 12' is not a command\n"
-    assert run_command(storage, "update 1 89.90 12") is True
-    assert capsys.readouterr().out == "'update 1 89.90 12' is not a command\n"
-    assert storage == [(1, "cordless drill", Decimal("89.99"), 12)]
 
-    # id/цена/количество не разбираются: исключение, ловится в main
+# помогла написать нейронка
+def test_run_command_invalid_arguments(capsys: pytest.CaptureFixture[str]) -> None:
+    storage = sample_storage()
+
+    # id/цена/количество не разбираются: исключение (ловится в main),
+    # хранилище и stdout не меняются
     for line, exc_type in (
         ("read abc", ValueError),
         ("delete abc", ValueError),
-        ("update abc foo 1.00 1", ValueError),
+        ("update abc claw hammer 1.00 1", ValueError),
         ("create foo 1.00 abc", ValueError),
         ("create foo abc 5", InvalidOperation),
         ("update 1 foo abc 2", InvalidOperation),
@@ -289,9 +332,13 @@ def test_run_command(capsys: pytest.CaptureFixture[str]) -> None:
         with pytest.raises(exc_type):
             run_command(storage, line)
         assert capsys.readouterr().out == ""
-    assert storage == [(1, "cordless drill", Decimal("89.99"), 12)]
+    assert storage == [
+        (1, "cordless drill", Decimal("89.99"), 12),
+        (2, "claw hammer", Decimal("9.90"), 40),
+    ]
 
 
+# помогла написать нейронка
 def test_main_session(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -317,6 +364,7 @@ def test_main_session(
     )
 
 
+# помогла написать нейронка
 def test_main_catches_invalid_arguments(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
