@@ -99,7 +99,6 @@ def run_command(storage: list[Product], line: str) -> bool:
         decimal.InvalidOperation: If the price argument of ``create`` or
             ``update`` does not parse as a decimal number.
     """
-    # TODO: реализуйте функцию
 
     match line.split():
         case ["help"]:
